@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Random Full Block Collage Generator</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: #111;
+    font-family: Arial, sans-serif;
+    color: white;
+  }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #000;
+    padding: 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid #333;
+    flex-wrap: wrap;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #c9a24d;
+    font-weight: bold;
+  }
+
+  input {
+    width: 76px;
+    padding: 10px;
+    background: #181818;
+    color: #fff;
+    border: 1px solid #b8944f;
+    border-radius: 6px;
+    font-weight: bold;
+  }
+
+  select {
+    width: 96px;
+    padding: 10px;
+    background: #181818;
+    color: #fff;
+    border: 1px solid #b8944f;
+    border-radius: 6px;
+    font-weight: bold;
+  }
+
+  button {
+    padding: 12px 18px;
+    background: #c9a24d;
+    color: #000;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+
+  button:hover {
+    background: #e0bd68;
+  }
+
+  .page-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .poster {
+    width: 600px;
+    height: 900px;
+    background: #050505;
+    padding: 18px;
+    border: 2px solid #b8944f;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .collage {
+    flex: 1;
+    position: relative;
+  }
+
+  .collage--grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: repeat(18, 1fr);
+    gap: 5px;
+  }
+
+  .collage--stacked {
+    display: block;
+    background: #efe7da;
+    overflow: hidden;
+  }
+
+  .photo {
+    background: linear-gradient(135deg, #333, #111);
+    border: 1.5px solid #b8944f;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .collage--stacked .photo {
+    position: absolute;
+    border: 6px solid #f6f1e8;
+    border-bottom-width: 10px;
+    background: linear-gradient(135deg, #353535, #151515);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.34);
+    transform: translate(-50%, -50%) rotate(var(--rotate));
+    z-index: var(--z);
+  }
+
+  .photo::before {
+    content: attr(data-num);
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #d6b66a;
+    font-size: 24px;
+    font-weight: bold;
+    opacity: 0.7;
+  }
+
+  .caption {
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #c9a24d;
+    letter-spacing: 7px;
+    font-family: Georgia, serif;
+    font-size: 26px;
+    text-transform: uppercase;
+  }
+
+  .divider {
+    width: 180px;
+    height: 1px;
+    background: #b8944f;
+    margin-top: 12px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="toolbar">
+  <label for="photoCount">
+    Photo count
+    <select id="photoCount">
+      <option value="6">6</option>
+      <option value="8">8</option>
+      <option value="10">10</option>
+      <option value="12" selected>12</option>
+      <option value="14">14</option>
+      <option value="16">16</option>
+      <option value="18">18</option>
+      <option value="20">20</option>
+      <option value="24">24</option>
+      <option value="30">30</option>
+      <option value="36">36</option>
+    </select>
+  </label>
+  <label for="layoutMode">
+    Layout style
+    <select id="layoutMode">
+      <option value="grid" selected>Grid collage</option>
+      <option value="stacked">Stacked photos</option>
+    </select>
+  </label>
+  <button id="generateButton" type="button">Randomize layout</button>
+  <button id="resetButton" type="button">Reset</button>
+</div>
+
+<div class="page-wrap">
+  <div class="poster">
+    <div id="collage" class="collage"></div>
+
+    <div class="caption">
+      <span id="captionText">Forever Loved</span>
+      <div class="divider"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MIN_PHOTO_COUNT = 1;
+const MAX_PHOTO_COUNT = 36;
+const DEFAULT_PHOTO_COUNT = 12;
+const GRID_COLUMNS = 12;
+const GRID_ROWS = 18;
+const BASE_COLUMNS = 6;
+const BASE_ROWS = 6;
+const MIN_BLOCK_RATIO = 0.6;
+const MAX_BLOCK_RATIO = 1.85;
+const RELAXED_MIN_BLOCK_RATIO = 0.5;
+const RELAXED_MAX_BLOCK_RATIO = 2.05;
+const DEFAULT_LAYOUT_MODE = "grid";
+const MAX_STACK_COLUMNS = 6;
+
+const captions = [
+  "Forever Loved",
+  "Cherished Memories",
+  "Always Remembered",
+  "A Beautiful Legacy",
+  "Forever In Our Hearts",
+  "Love Never Fades",
+  "Precious Memories",
+  "Your Memory Lives On"
+];
+
+function generateLayout() {
+  const collage = document.getElementById("collage");
+  const countInput = document.getElementById("photoCount");
+  const modeInput = document.getElementById("layoutMode");
+  const count = clampPhotoCount(countInput.value);
+  const mode = getLayoutMode(modeInput.value);
+
+  countInput.value = String(count);
+  collage.innerHTML = "";
+  collage.className = `collage collage--${mode}`;
+
+  const layoutItems = mode === "stacked"
+    ? createStackedLayout(count)
+    : createRandomBlocks(count);
+
+  layoutItems.forEach((item, index) => {
+    const div = document.createElement("div");
+    div.className = "photo";
+    div.dataset.num = index + 1;
+
+    if (mode === "stacked") {
+      applyStackedPhotoStyle(div, item);
+    } else {
+      div.style.gridColumn = `${item[0]} / ${item[2]}`;
+      div.style.gridRow = `${item[1]} / ${item[3]}`;
+    }
+
+    collage.appendChild(div);
+  });
+
+  const randomCaption = captions[Math.floor(Math.random() * captions.length)];
+  document.getElementById("captionText").textContent = randomCaption;
+}
+
+function resetLayoutControls() {
+  document.getElementById("photoCount").value = String(DEFAULT_PHOTO_COUNT);
+  document.getElementById("layoutMode").value = DEFAULT_LAYOUT_MODE;
+  generateLayout();
+}
+
+function clampPhotoCount(value) {
+  if (String(value).trim() === "") {
+    return DEFAULT_PHOTO_COUNT;
+  }
+
+  const count = Number(value);
+
+  if (!Number.isFinite(count)) {
+    return DEFAULT_PHOTO_COUNT;
+  }
+
+  return Math.max(MIN_PHOTO_COUNT, Math.min(MAX_PHOTO_COUNT, Math.floor(count)));
+}
+
+function getLayoutMode(value) {
+  return value === "stacked" ? "stacked" : DEFAULT_LAYOUT_MODE;
+}
+
+function createRandomBlocks(count) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const blocks = createMergedBlocks(count);
+
+    if (blocks.length === count && isUsableLayout(blocks, count)) {
+      return mapBaseBlocksToGrid(blocks);
+    }
+  }
+
+  return createBalancedBlocks(count);
+}
+
+function createStackedLayout(count) {
+  const rowCounts = getStackedRowCounts(count);
+  const rows = rowCounts.length;
+  const cellHeight = 100 / rows;
+  const items = [];
+  let photoIndex = 0;
+
+  rowCounts.forEach((photosInRow, row) => {
+    const cellWidth = 100 / photosInRow;
+    const rowOffset = photosInRow < Math.max(...rowCounts) ? randomFloat(-4, 4) : 0;
+
+    for (let column = 0; column < photosInRow; column++) {
+      const isFeature = (photoIndex + row + column) % 5 === 0;
+      const width = clampNumber(cellWidth * randomFloat(1.04, isFeature ? 1.18 : 1.12), 18, 48);
+      const height = clampNumber(cellHeight * randomFloat(1.08, isFeature ? 1.22 : 1.16), 16, 48);
+      const centerX = ((column + 0.5) * cellWidth) + rowOffset + randomFloat(-2.2, 2.2);
+      const centerY = ((row + 0.5) * cellHeight) + randomFloat(-2, 2);
+
+      items.push({
+        x: clampNumber(centerX, (width / 2) + 1, 99 - (width / 2)),
+        y: clampNumber(centerY, (height / 2) + 1, 99 - (height / 2)),
+        width,
+        height,
+        rotate: randomFloat(-4.2, 4.2),
+        z: photoIndex + 1
+      });
+
+      photoIndex++;
+    }
+  });
+
+  shuffleArray(items);
+
+  return items.map((item, index) => ({
+    ...item,
+    z: index + 1
+  }));
+}
+
+function getStackedRowCounts(count) {
+  const rows = getStackedRowCount(count);
+  const rowCounts = Array(rows).fill(Math.floor(count / rows));
+  let remaining = count % rows;
+  let index = randomInt(0, rows - 1);
+
+  while (remaining > 0) {
+    if (rowCounts[index] < MAX_STACK_COLUMNS) {
+      rowCounts[index]++;
+      remaining--;
+    }
+
+    index = (index + 1) % rows;
+  }
+
+  shuffleArray(rowCounts);
+
+  return rowCounts;
+}
+
+function getStackedRowCount(count) {
+  if (count <= 6) {
+    return 2;
+  }
+
+  if (count <= 12) {
+    return 3;
+  }
+
+  if (count <= 18) {
+    return 4;
+  }
+
+  if (count <= 24) {
+    return 5;
+  }
+
+  return 6;
+}
+
+function applyStackedPhotoStyle(div, item) {
+  div.style.left = `${item.x}%`;
+  div.style.top = `${item.y}%`;
+  div.style.width = `${item.width}%`;
+  div.style.height = `${item.height}%`;
+  div.style.setProperty("--rotate", `${item.rotate}deg`);
+  div.style.setProperty("--z", item.z);
+}
+
+function createMergedBlocks(count) {
+  const blocks = createBaseBlocks();
+  const maxBaseArea = getMaxBaseArea(count);
+
+  while (blocks.length > count) {
+    const merge = findNextMerge(blocks, MIN_BLOCK_RATIO, MAX_BLOCK_RATIO, maxBaseArea)
+      || findNextMerge(blocks, RELAXED_MIN_BLOCK_RATIO, RELAXED_MAX_BLOCK_RATIO, maxBaseArea);
+
+    if (!merge) {
+      break;
+    }
+
+    blocks.splice(Math.max(merge.firstIndex, merge.secondIndex), 1);
+    blocks.splice(Math.min(merge.firstIndex, merge.secondIndex), 1, merge.block);
+  }
+
+  return blocks;
+}
+
+function getMaxBaseArea(count) {
+  const averageArea = (BASE_COLUMNS * BASE_ROWS) / count;
+
+  return Math.min(10, Math.max(3, Math.ceil(averageArea * 1.8)));
+}
+
+function isUsableLayout(blocks, count) {
+  const maxArea = getMaxBaseArea(count);
+
+  return blocks.every((block) => {
+    const ratio = getBlockRatio(block);
+
+    return getBlockArea(block) <= maxArea
+      && ratio >= RELAXED_MIN_BLOCK_RATIO
+      && ratio <= RELAXED_MAX_BLOCK_RATIO;
+  });
+}
+
+function mapBaseBlocksToGrid(blocks) {
+  return blocks.map((block) => [
+    (block.colStart * 2) + 1,
+    (block.rowStart * 3) + 1,
+    (block.colEnd * 2) + 1,
+    (block.rowEnd * 3) + 1
+  ]);
+}
+
+function createBalancedBlocks(count) {
+  const rowCount = Math.min(6, Math.max(1, count <= 8 ? Math.ceil(count / 2) : Math.ceil(count / 3)));
+  const rowPhotoCounts = distributeUnits(count, rowCount, 1);
+  const rowHeights = distributeUnits(GRID_ROWS, rowCount, 2);
+  const blocks = [];
+  let rowStart = 1;
+
+  shuffleArray(rowPhotoCounts);
+  shuffleArray(rowHeights);
+
+  rowPhotoCounts.forEach((photosInRow, rowIndex) => {
+    const rowEnd = rowStart + rowHeights[rowIndex];
+    const colWidths = distributeUnits(GRID_COLUMNS, photosInRow, 2);
+    let colStart = 1;
+
+    shuffleArray(colWidths);
+
+    colWidths.forEach((width) => {
+      blocks.push([
+        colStart,
+        rowStart,
+        colStart + width,
+        rowEnd
+      ]);
+
+      colStart += width;
+    });
+
+    rowStart = rowEnd;
+  });
+
+  return blocks;
+}
+
+function distributeUnits(total, parts, minSize) {
+  const baseSize = Math.max(minSize, Math.floor(total / parts));
+  const sizes = Array(parts).fill(baseSize);
+  let remaining = total - (baseSize * parts);
+  let index = randomInt(0, parts - 1);
+
+  while (remaining > 0) {
+    sizes[index]++;
+    remaining--;
+    index = (index + 1) % parts;
+  }
+
+  return sizes;
+}
+
+function createBaseBlocks() {
+  const blocks = [];
+
+  for (let row = 0; row < BASE_ROWS; row++) {
+    for (let col = 0; col < BASE_COLUMNS; col++) {
+      blocks.push({
+        colStart: col,
+        rowStart: row,
+        colEnd: col + 1,
+        rowEnd: row + 1
+      });
+    }
+  }
+
+  return blocks;
+}
+
+function findNextMerge(blocks, minRatio, maxRatio, maxArea) {
+  const candidates = [];
+
+  for (let firstIndex = 0; firstIndex < blocks.length; firstIndex++) {
+    for (let secondIndex = firstIndex + 1; secondIndex < blocks.length; secondIndex++) {
+      const block = getMergedBlock(blocks[firstIndex], blocks[secondIndex]);
+
+      if (block && isUsableBlock(block, minRatio, maxRatio, maxArea)) {
+        candidates.push({
+          firstIndex,
+          secondIndex,
+          block,
+          score: getMergeScore(block)
+        });
+      }
+    }
+  }
+
+  if (!candidates.length) {
+    return null;
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+
+  return candidates[randomInt(0, Math.min(8, candidates.length) - 1)];
+}
+
+function getMergedBlock(first, second) {
+  const sameRows = first.rowStart === second.rowStart && first.rowEnd === second.rowEnd;
+  const sameColumns = first.colStart === second.colStart && first.colEnd === second.colEnd;
+  const touchesHorizontally = first.colEnd === second.colStart || second.colEnd === first.colStart;
+  const touchesVertically = first.rowEnd === second.rowStart || second.rowEnd === first.rowStart;
+
+  if (sameRows && touchesHorizontally) {
+    return {
+      colStart: Math.min(first.colStart, second.colStart),
+      rowStart: first.rowStart,
+      colEnd: Math.max(first.colEnd, second.colEnd),
+      rowEnd: first.rowEnd
+    };
+  }
+
+  if (sameColumns && touchesVertically) {
+    return {
+      colStart: first.colStart,
+      rowStart: Math.min(first.rowStart, second.rowStart),
+      colEnd: first.colEnd,
+      rowEnd: Math.max(first.rowEnd, second.rowEnd)
+    };
+  }
+
+  return null;
+}
+
+function isUsableBlock(block, minRatio, maxRatio, maxArea) {
+  const ratio = getBlockRatio(block);
+
+  return getBlockArea(block) <= maxArea
+    && ratio >= minRatio
+    && ratio <= maxRatio;
+}
+
+function getMergeScore(block) {
+  const area = getBlockArea(block);
+  const ratio = getBlockRatio(block);
+  const squareScore = Math.max(0, 2.5 - Math.abs(1 - ratio));
+
+  return squareScore + (1 / area) + Math.random();
+}
+
+function getBlockArea(block) {
+  return getBlockWidth(block) * getBlockHeight(block);
+}
+
+function getBlockRatio(block) {
+  return (getBlockWidth(block) * (GRID_COLUMNS / BASE_COLUMNS))
+    / (getBlockHeight(block) * (GRID_ROWS / BASE_ROWS));
+}
+
+function getBlockWidth(block) {
+  return block.colEnd - block.colStart;
+}
+
+function getBlockHeight(block) {
+  return block.rowEnd - block.rowStart;
+}
+
+function shuffleArray(items) {
+  for (let index = items.length - 1; index > 0; index--) {
+    const swapIndex = randomInt(0, index);
+    [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+  }
+
+  return items;
+}
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomFloat(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+document.getElementById("generateButton").addEventListener("click", generateLayout);
+document.getElementById("resetButton").addEventListener("click", resetLayoutControls);
+document.getElementById("photoCount").addEventListener("change", generateLayout);
+document.getElementById("layoutMode").addEventListener("change", generateLayout);
+
+generateLayout();
+</script>
+
+</body>
+</html>
