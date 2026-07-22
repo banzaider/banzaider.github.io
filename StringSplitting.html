@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Left Right Text Splitter</title>
+
+<style>
+body{
+    margin:0;
+    padding:30px;
+    background:#000;
+    color:#fff;
+    font-family:Georgia, serif;
+}
+
+.main-container{
+    max-width:1100px;
+    margin:0 auto;
+}
+
+label{
+    display:block;
+    color:#d6b15e;
+    font-size:17px;
+    font-weight:700;
+    margin-bottom:8px;
+}
+
+textarea,
+input{
+    width:100%;
+    box-sizing:border-box;
+    background:#111;
+    color:#fff;
+    border:1px solid #444;
+    padding:12px;
+    font-size:16px;
+    line-height:1.5;
+    border-radius:6px;
+}
+
+textarea{
+    resize:vertical;
+}
+
+.input-section{
+    margin-bottom:20px;
+}
+
+.settings{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:15px;
+    background:#111;
+    border:1px solid #333;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:18px;
+}
+
+.buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:25px;
+}
+
+button{
+    padding:11px 18px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:700;
+}
+
+.btn-main{
+    background:#d6b15e;
+    color:#000;
+}
+
+.btn-dark{
+    background:#333;
+    color:#fff;
+    border:1px solid #555;
+}
+
+.output-container{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:25px;
+    margin-bottom:25px;
+}
+
+.copy-under{
+    margin-top:10px;
+}
+
+.preview-box{
+    background:#050505;
+    border:1px solid #333;
+    padding:35px;
+    margin-top:20px;
+    border-radius:8px;
+}
+
+.preview-title{
+    text-align:center;
+    color:#d6b15e;
+    letter-spacing:3px;
+    margin-bottom:25px;
+    font-size:20px;
+    font-weight:700;
+}
+
+.preview-row{
+    display:grid;
+    gap:24px;
+    margin-bottom:11px;
+    align-items:start;
+}
+
+.preview-left{
+    text-align:right;
+    color:#d6b15e;
+    font-weight:700;
+    font-size:18px;
+    line-height:1.35;
+}
+
+.preview-right{
+    text-align:left;
+    color:#ffffff;
+    font-weight:400;
+    font-size:18px;
+    line-height:1.35;
+}
+
+.small-note{
+    color:#aaa;
+    font-size:13px;
+    margin-top:6px;
+}
+
+.status{
+    color:#d6b15e;
+    margin-top:10px;
+    font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="main-container">
+
+    <div class="input-section">
+        <label>1. วางข้อความแบบ ซ้าย — ขวา</label>
+
+        <textarea id="inputText" style="height:240px;">Welcome & Greetings ............... Church Anniversary Committee
+Opening Prayer .................... Associate Minister
+Scripture Reading ................. Guest Minister
+Praise & Worship .................. Praise Team
+Special Musical Selection ......... Church Choir
+Church History Presentation ....... Church Historian
+Recognition & Appreciation ........ Anniversary Committee
+Introduction of Guest Speaker ..... Master of Ceremonies
+Anniversary Message ............... Guest Speaker
+Offering .......................... Finance Ministry
+Acknowledgements .................. Church Anniversary Committee
+Closing Remarks ................... Senior Pastor
+Benediction ....................... Senior Pastor
+Recessional</textarea>
+
+        <div class="small-note">
+            รองรับตัวคั่น AUTO: ........, --------, _____, —, -, |, :, =, →
+        </div>
+    </div>
+
+    <div class="settings">
+        <div>
+            <label>ตัวคั่น Separator</label>
+            <input id="separatorInput" value="AUTO">
+        </div>
+
+        <div>
+            <label>Left Width</label>
+            <input id="leftWidthInput" value="45%">
+        </div>
+
+        <div>
+            <label>Right Width</label>
+            <input id="rightWidthInput" value="55%">
+        </div>
+    </div>
+
+    <div class="buttons">
+        <button class="btn-main" onclick="renderProgram()">Generate</button>
+        <button class="btn-dark" onclick="swapText()">Swap Left ↔ Right</button>
+        <button class="btn-dark" onclick="copyAll()">Copy All</button>
+        <button class="btn-dark" onclick="clearAll()">Clear</button>
+    </div>
+
+    <div class="output-container">
+
+        <div>
+            <label>ผลลัพธ์ฝั่งซ้าย</label>
+
+            <textarea
+                id="outputLeft"
+                style="height:260px;"
+                readonly></textarea>
+
+            <div class="copy-under">
+                <button
+                    class="btn-dark"
+                    onclick="copyText('outputLeft')">
+                    Copy Left
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <label>ผลลัพธ์ฝั่งขวา</label>
+
+            <textarea
+                id="outputRight"
+                style="height:260px;"
+                readonly></textarea>
+
+            <div class="copy-under">
+                <button
+                    class="btn-dark"
+                    onclick="copyText('outputRight')">
+                    Copy Right
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="preview-box">
+        <div class="preview-title">PREVIEW</div>
+        <div id="preview"></div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+</div>
+
+<script>
+function escapeHTML(text){
+    return String(text)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
+
+function getSeparatorRegex(line){
+    const selected =
+        document.getElementById("separatorInput")
+        .value
+        .trim();
+
+    if(selected && selected.toUpperCase() !== "AUTO"){
+        const escaped =
+            selected.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+
+        return new RegExp("\\s*" + escaped + "\\s*");
+    }
+
+    return /\s*(?:\.{3,}|-{3,}|_{3,}|—|–|\||:|=|→|>>)\s*/;
+}
+
+function splitLineSmart(line){
+    const selected =
+        document.getElementById("separatorInput")
+        .value
+        .trim();
+
+    if(selected && selected.toUpperCase() !== "AUTO"){
+        const regex = getSeparatorRegex(line);
+        return line.split(regex);
+    }
+
+    const dotLeaderRegex =
+        /\s*(?:\.{3,}|-{3,}|_{3,})\s*/;
+
+    if(dotLeaderRegex.test(line)){
+        return line.split(dotLeaderRegex);
+    }
+
+    const normalRegex =
+        /\s*(?:—|–|\||:|=|→|>>)\s*/;
+
+    if(normalRegex.test(line)){
+        return line.split(normalRegex);
+    }
+
+    return [line, ""];
+}
+
+function renderProgram(){
+    const rawText =
+        document.getElementById("inputText")
+        .value
+        .trim();
+
+    const leftWidth =
+        document.getElementById("leftWidthInput")
+        .value
+        .trim() || "45%";
+
+    const rightWidth =
+        document.getElementById("rightWidthInput")
+        .value
+        .trim() || "55%";
+
+    let leftLines = [];
+    let rightLines = [];
+    let previewRows = "";
+
+    rawText.split("\n").forEach(function(line){
+        if(!line.trim()) return;
+
+        const parts = splitLineSmart(line);
+
+        const leftText =
+            (parts.shift() || "")
+            .trim();
+
+        const rightText =
+            parts.join(" — ")
+            .trim();
+
+        leftLines.push(leftText);
+        rightLines.push(rightText);
+
+        previewRows +=
+            '<div class="preview-row" style="grid-template-columns:' +
+            leftWidth +
+            ' ' +
+            rightWidth +
+            ';">' +
+            '<div class="preview-left">' +
+            escapeHTML(leftText) +
+            '</div>' +
+            '<div class="preview-right">' +
+            escapeHTML(rightText) +
+            '</div>' +
+            '</div>';
+    });
+
+    document.getElementById("outputLeft").value =
+        leftLines.join("\n");
+
+    document.getElementById("outputRight").value =
+        rightLines.join("\n");
+
+    document.getElementById("preview").innerHTML =
+        previewRows;
+
+    setStatus("Generated successfully.");
+}
+
+function swapText(){
+    const leftText =
+        document.getElementById("outputLeft")
+        .value
+        .trim();
+
+    const rightText =
+        document.getElementById("outputRight")
+        .value
+        .trim();
+
+    if(!leftText && !rightText){
+        alert("กรุณากด Generate ก่อน");
+        return;
+    }
+
+    const left =
+        leftText
+        ? leftText.split("\n")
+        : [];
+
+    const right =
+        rightText
+        ? rightText.split("\n")
+        : [];
+
+    let combined = [];
+    const max = Math.max(left.length, right.length);
+
+    for(let i = 0; i < max; i++){
+        const l = left[i] || "";
+        const r = right[i] || "";
+
+        if(r){
+            combined.push(l + " ............... " + r);
+        }else{
+            combined.push(l);
+        }
+    }
+
+    document.getElementById("inputText").value =
+        combined.join("\n");
+
+    renderProgram();
+}
+
+function copyToClipboard(text){
+    if(!text.trim()){
+        alert("ไม่มีข้อความให้คัดลอก");
+        return;
+    }
+
+    if(navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(text)
+            .then(function(){
+                setStatus("Copied.");
+            })
+            .catch(function(){
+                fallbackCopy(text);
+            });
+    }else{
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text){
+    const temp =
+        document.createElement("textarea");
+
+    temp.value = text;
+    temp.setAttribute("readonly", "");
+    temp.style.position = "fixed";
+    temp.style.left = "-9999px";
+    temp.style.top = "-9999px";
+    temp.style.opacity = "0";
+
+    document.body.appendChild(temp);
+
+    temp.focus();
+    temp.select();
+    temp.setSelectionRange(0, temp.value.length);
+
+    try{
+        const success =
+            document.execCommand("copy");
+
+        if(success){
+            setStatus("Copied.");
+        }else{
+            alert("Copy ไม่สำเร็จ กรุณากด Ctrl + C เอง");
+        }
+    }catch(err){
+        alert("Copy ไม่สำเร็จ กรุณากด Ctrl + C เอง");
+    }
+
+    document.body.removeChild(temp);
+}
+
+function copyText(elementId){
+    const element =
+        document.getElementById(elementId);
+
+    const value =
+        element.value || "";
+
+    copyToClipboard(value);
+}
+
+function copyAll(){
+    const left =
+        document.getElementById("outputLeft")
+        .value;
+
+    const right =
+        document.getElementById("outputRight")
+        .value;
+
+    const allText =
+        "LEFT:\n" +
+        left +
+        "\n\nRIGHT:\n" +
+        right;
+
+    copyToClipboard(allText);
+}
+
+function clearAll(){
+    document.getElementById("inputText").value = "";
+    document.getElementById("outputLeft").value = "";
+    document.getElementById("outputRight").value = "";
+    document.getElementById("preview").innerHTML = "";
+
+    setStatus("Cleared.");
+}
+
+function setStatus(message){
+    document.getElementById("status").textContent = message;
+}
+
+renderProgram();
+</script>
+
+</body>
+</html>
