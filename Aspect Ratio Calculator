@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aspect Ratio Calculator</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --text: #171717;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #111827;
+      --soft: #f9fafb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, "Noto Sans Thai", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(760px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 28px 28px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 5vw, 38px);
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .content {
+      padding: 28px;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 150px;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    input, select, button {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 12px;
+      font: inherit;
+    }
+
+    input, select {
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 0 14px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(17,24,39,.08);
+    }
+
+    .actions {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      padding: 0 18px;
+      font-weight: 700;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .secondary {
+      width: auto;
+      background: #eef0f3;
+      color: var(--text);
+    }
+
+    .result {
+      margin-top: 24px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--soft);
+      padding: 22px;
+    }
+
+    .ratio-label {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .ratio {
+      font-size: clamp(40px, 10vw, 72px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .orientation {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .detail-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .detail-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .detail-card strong {
+      font-size: 17px;
+    }
+
+    .preview-wrap {
+      margin-top: 20px;
+      display: grid;
+      place-items: center;
+      min-height: 220px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 16px;
+      background:
+        linear-gradient(45deg, #f8fafc 25%, transparent 25%),
+        linear-gradient(-45deg, #f8fafc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f8fafc 75%),
+        linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+      overflow: hidden;
+    }
+
+    .preview-box {
+      width: 120px;
+      height: 180px;
+      max-width: 78%;
+      max-height: 180px;
+      border: 3px solid var(--accent);
+      background: rgba(17,24,39,.08);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      text-align: center;
+      padding: 10px;
+      transition: width .25s ease, height .25s ease;
+    }
+
+    .note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-weight: 700;
+      margin-top: 12px;
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .input-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .unit-field {
+        grid-column: 1 / -1;
+      }
+
+      .details {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        grid-template-columns: 1fr;
+      }
+
+      .secondary {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="header">
+      <h1>Aspect Ratio Calculator</h1>
+      <p class="subtitle">
+        ใส่ความกว้างและความสูง โดยเลือกหน่วย px, in หรือ cm
+        ระบบจะแสดงอัตราส่วนแบบย่อและแนวของงานอัตโนมัติ
+      </p>
+    </section>
+
+    <section class="content">
+      <div class="input-grid">
+        <div>
+          <label for="width">ความกว้าง</label>
+          <input id="width" type="number" min="0" step="any" value="24" placeholder="เช่น 24" />
+        </div>
+
+        <div>
+          <label for="height">ความสูง</label>
+          <input id="height" type="number" min="0" step="any" value="36" placeholder="เช่น 36" />
+        </div>
+
+        <div class="unit-field">
+          <label for="unit">หน่วย</label>
+          <select id="unit">
+            <option value="px">px</option>
+            <option value="in" selected>in</option>
+            <option value="cm">cm</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="calculateBtn">คำนวณ Aspect Ratio</button>
+        <button class="secondary" id="swapBtn" type="button">สลับกว้าง ↔ สูง</button>
+      </div>
+
+      <div id="error" class="error">กรุณาใส่ค่ามากกว่า 0 ทั้งความกว้างและความสูง</div>
+
+      <section class="result" aria-live="polite">
+        <div class="ratio-label">Aspect Ratio แบบย่อ</div>
+        <div class="ratio" id="ratio">2:3</div>
+        <div class="orientation" id="orientation">แนวตั้ง Portrait</div>
+
+        <div class="details">
+          <div class="detail-card">
+            <span>ขนาดที่ใส่</span>
+            <strong id="originalSize">24 × 36 in</strong>
+          </div>
+          <div class="detail-card">
+            <span>อัตราส่วนทศนิยม</span>
+            <strong id="decimalRatio">0.6667</strong>
+          </div>
+          <div class="detail-card">
+            <span>เปอร์เซ็นต์ W:H</span>
+            <strong id="percentageRatio">66.67%</strong>
+          </div>
+        </div>
+
+        <div class="preview-wrap">
+          <div class="preview-box" id="previewBox">
+            <span id="previewText">2:3</span>
+          </div>
+        </div>
+
+        <p class="note">
+          หน่วยไม่กระทบ Aspect Ratio เพราะระบบเปรียบเทียบสัดส่วนระหว่างความกว้างและความสูงโดยตรง
+          เช่น 24 × 36 in, 2400 × 3600 px และ 20 × 30 cm ล้วนเป็น 2:3
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const widthInput = document.getElementById("width");
+    const heightInput = document.getElementById("height");
+    const unitSelect = document.getElementById("unit");
+    const calculateBtn = document.getElementById("calculateBtn");
+    const swapBtn = document.getElementById("swapBtn");
+    const errorBox = document.getElementById("error");
+
+    const ratioEl = document.getElementById("ratio");
+    const orientationEl = document.getElementById("orientation");
+    const originalSizeEl = document.getElementById("originalSize");
+    const decimalRatioEl = document.getElementById("decimalRatio");
+    const percentageRatioEl = document.getElementById("percentageRatio");
+    const previewBox = document.getElementById("previewBox");
+    const previewText = document.getElementById("previewText");
+
+    function gcd(a, b) {
+      a = Math.abs(Math.round(a));
+      b = Math.abs(Math.round(b));
+      while (b) {
+        const t = b;
+        b = a % b;
+        a = t;
+      }
+      return a || 1;
+    }
+
+    function decimalPlaces(value) {
+      const text = String(value);
+      if (text.includes("e-")) {
+        return parseInt(text.split("e-")[1], 10);
+      }
+      return (text.split(".")[1] || "").length;
+    }
+
+    function simplifyRatio(width, height) {
+      const places = Math.max(decimalPlaces(width), decimalPlaces(height));
+      const multiplier = Math.pow(10, Math.min(places, 6));
+
+      const w = Math.round(width * multiplier);
+      const h = Math.round(height * multiplier);
+      const divisor = gcd(w, h);
+
+      return [w / divisor, h / divisor];
+    }
+
+    function formatNumber(value) {
+      return Number.isInteger(value)
+        ? value.toLocaleString()
+        : value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+    }
+
+    function calculate() {
+      const width = parseFloat(widthInput.value);
+      const height = parseFloat(heightInput.value);
+      const unit = unitSelect.value;
+
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        errorBox.style.display = "block";
+        return;
+      }
+
+      errorBox.style.display = "none";
+
+      const [ratioW, ratioH] = simplifyRatio(width, height);
+      const decimal = width / height;
+      const percentage = decimal * 100;
+
+      let orientation = "สี่เหลี่ยมจัตุรัส Square";
+      if (width > height) orientation = "แนวนอน Landscape";
+      if (width < height) orientation = "แนวตั้ง Portrait";
+
+      ratioEl.textContent = `${ratioW}:${ratioH}`;
+      previewText.textContent = `${ratioW}:${ratioH}`;
+      orientationEl.textContent = orientation;
+      originalSizeEl.textContent = `${formatNumber(width)} × ${formatNumber(height)} ${unit}`;
+      decimalRatioEl.textContent = decimal.toFixed(4);
+      percentageRatioEl.textContent = `${percentage.toFixed(2)}%`;
+
+      const maxWidth = 250;
+      const maxHeight = 180;
+      let previewWidth = maxWidth;
+      let previewHeight = previewWidth / decimal;
+
+      if (previewHeight > maxHeight) {
+        previewHeight = maxHeight;
+        previewWidth = previewHeight * decimal;
+      }
+
+      previewBox.style.width = `${Math.max(previewWidth, 35)}px`;
+      previewBox.style.height = `${Math.max(previewHeight, 35)}px`;
+    }
+
+    calculateBtn.addEventListener("click", calculate);
+
+    swapBtn.addEventListener("click", () => {
+      const oldWidth = widthInput.value;
+      widthInput.value = heightInput.value;
+      heightInput.value = oldWidth;
+      calculate();
+    });
+
+    [widthInput, heightInput, unitSelect].forEach((element) => {
+      element.addEventListener("input", calculate);
+      element.addEventListener("change", calculate);
+    });
+
+    calculate();
+  </script>
+</body>
+</html>
