@@ -1,7 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Left Right Text Splitter</title>
 
 <style>
@@ -10,7 +13,7 @@ body{
     padding:30px;
     background:#000;
     color:#fff;
-    font-family:Georgia, serif;
+    font-family:Georgia, "Noto Serif Thai", serif;
 }
 
 .main-container{
@@ -27,7 +30,8 @@ label{
 }
 
 textarea,
-input{
+input,
+select{
     width:100%;
     box-sizing:border-box;
     background:#111;
@@ -49,7 +53,7 @@ textarea{
 
 .settings{
     display:grid;
-    grid-template-columns:1fr 1fr 1fr;
+    grid-template-columns:1.2fr 1.2fr 1fr 1fr;
     gap:15px;
     background:#111;
     border:1px solid #333;
@@ -73,6 +77,23 @@ button{
     font-weight:700;
 }
 
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+select:focus-visible{
+    outline:2px solid #d6b15e;
+    outline-offset:2px;
+}
+
+button:active{
+    transform:translateY(1px);
+}
+
+input:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+}
+
 .btn-main{
     background:#d6b15e;
     color:#000;
@@ -86,7 +107,7 @@ button{
 
 .output-container{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
     gap:25px;
     margin-bottom:25px;
 }
@@ -96,11 +117,7 @@ button{
 }
 
 .preview-box{
-    background:#050505;
-    border:1px solid #333;
-    padding:35px;
     margin-top:20px;
-    border-radius:8px;
 }
 
 .preview-title{
@@ -110,6 +127,28 @@ button{
     margin-bottom:25px;
     font-size:20px;
     font-weight:700;
+}
+
+.preview-grid{
+    display:grid;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
+    gap:20px;
+}
+
+.preview-panel{
+    background:#050505;
+    border:1px solid #333;
+    padding:28px;
+    border-radius:8px;
+    min-width:0;
+}
+
+.preview-subtitle{
+    color:#aaa;
+    text-align:center;
+    font-size:13px;
+    letter-spacing:1px;
+    margin-bottom:22px;
 }
 
 .preview-row{
@@ -125,6 +164,31 @@ button{
     font-weight:700;
     font-size:18px;
     line-height:1.35;
+    overflow-wrap:anywhere;
+}
+
+.preview-block-item{
+    margin-bottom:20px;
+}
+
+.preview-block-item:last-child{
+    margin-bottom:0;
+}
+
+.preview-block-left{
+    color:#d6b15e;
+    font-weight:700;
+    font-size:18px;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+}
+
+.preview-block-right{
+    color:#fff;
+    font-size:18px;
+    line-height:1.35;
+    margin-top:4px;
+    overflow-wrap:anywhere;
 }
 
 .preview-right{
@@ -133,6 +197,7 @@ button{
     font-weight:400;
     font-size:18px;
     line-height:1.35;
+    overflow-wrap:anywhere;
 }
 
 .small-note{
@@ -145,6 +210,32 @@ button{
     color:#d6b15e;
     margin-top:10px;
     font-size:14px;
+    min-height:1.4em;
+}
+
+@media (max-width:980px){
+    .settings{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .preview-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+@media (max-width:640px){
+    body{
+        padding:18px;
+    }
+
+    .settings,
+    .output-container{
+        grid-template-columns:1fr;
+    }
+
+    .preview-panel{
+        padding:20px;
+    }
 }
 </style>
 </head>
@@ -154,7 +245,7 @@ button{
 <div class="main-container">
 
     <div class="input-section">
-        <label>1. วางข้อความแบบ ซ้าย — ขวา</label>
+        <label for="inputText">1. วางข้อความที่ต้องการแยกซ้าย — ขวา</label>
 
         <textarea id="inputText" style="height:240px;">Welcome & Greetings ............... Church Anniversary Committee
 Opening Prayer .................... Associate Minister
@@ -172,24 +263,32 @@ Benediction ....................... Senior Pastor
 Recessional</textarea>
 
         <div class="small-note">
-            รองรับตัวคั่น AUTO: ........, --------, _____, —, -, |, :, =, →
+            Separator: แยกข้อความในบรรทัดเดียวกันด้วยตัวคั่น • Block: ใช้บรรทัดว่างแบ่งแต่ละรายการ
         </div>
     </div>
 
     <div class="settings">
         <div>
-            <label>ตัวคั่น Separator</label>
+            <label for="modeInput">โหมดการแยก</label>
+            <select id="modeInput" onchange="updateModeHelp(); renderProgram();">
+                <option value="separator">Separator / AUTO</option>
+                <option value="block">Block (หัวข้อ + รายละเอียด)</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="separatorInput">ตัวคั่น Separator</label>
             <input id="separatorInput" value="AUTO">
         </div>
 
         <div>
-            <label>Left Width</label>
-            <input id="leftWidthInput" value="45%">
+            <label for="leftWidthInput">Left Width</label>
+            <input id="leftWidthInput" value="45%" inputmode="decimal">
         </div>
 
         <div>
-            <label>Right Width</label>
-            <input id="rightWidthInput" value="55%">
+            <label for="rightWidthInput">Right Width</label>
+            <input id="rightWidthInput" value="55%" inputmode="decimal">
         </div>
     </div>
 
@@ -203,7 +302,7 @@ Recessional</textarea>
     <div class="output-container">
 
         <div>
-            <label>ผลลัพธ์ฝั่งซ้าย</label>
+            <label for="outputLeft">ผลลัพธ์ฝั่งซ้าย</label>
 
             <textarea
                 id="outputLeft"
@@ -220,7 +319,7 @@ Recessional</textarea>
         </div>
 
         <div>
-            <label>ผลลัพธ์ฝั่งขวา</label>
+            <label for="outputRight">ผลลัพธ์ฝั่งขวา</label>
 
             <textarea
                 id="outputRight"
@@ -240,10 +339,20 @@ Recessional</textarea>
 
     <div class="preview-box">
         <div class="preview-title">PREVIEW</div>
-        <div id="preview"></div>
+        <div class="preview-grid">
+            <div class="preview-panel">
+                <div class="preview-subtitle">แบบที่ 1 — ซ้าย / ขวา</div>
+                <div id="preview"></div>
+            </div>
+
+            <div class="preview-panel">
+                <div class="preview-subtitle">แบบที่ 2 — หัวข้อ / รายละเอียด</div>
+                <div id="previewBlock"></div>
+            </div>
+        </div>
     </div>
 
-    <div id="status" class="status"></div>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
 
 </div>
 
@@ -257,7 +366,45 @@ function escapeHTML(text){
         .replaceAll("'","&#039;");
 }
 
-function getSeparatorRegex(line){
+let currentRows = [];
+
+function parseWidthWeight(value){
+    const match = String(value)
+        .trim()
+        .match(/^(\d+(?:\.\d+)?)\s*(?:%|fr)?$/i);
+
+    if(!match) return null;
+
+    const number = Number(match[1]);
+    if(!Number.isFinite(number) || number <= 0 || number > 1000){
+        return null;
+    }
+
+    return number;
+}
+
+function getColumnSettings(){
+    const leftValue =
+        document.getElementById("leftWidthInput").value;
+    const rightValue =
+        document.getElementById("rightWidthInput").value;
+
+    const parsedLeft = parseWidthWeight(leftValue);
+    const parsedRight = parseWidthWeight(rightValue);
+    const corrected =
+        parsedLeft === null || parsedRight === null;
+    const left = corrected ? 45 : parsedLeft;
+    const right = corrected ? 55 : parsedRight;
+
+    return {
+        template:
+            "minmax(0, " + left + "fr) " +
+            "minmax(0, " + right + "fr)",
+        corrected: corrected
+    };
+}
+
+function getSeparatorRegex(){
     const selected =
         document.getElementById("separatorInput")
         .value
@@ -301,47 +448,81 @@ function splitLineSmart(line){
     return [line, ""];
 }
 
+function cleanText(text){
+    return String(text)
+        .trim()
+        .replace(/^\*\*(.*?)\*\*$/s, "$1")
+        .trim();
+}
+
+function parseBlockMode(rawText){
+    return rawText
+        .replace(/\r\n?/g, "\n")
+        .trim()
+        .split(/\n\s*\n+/)
+        .map(function(block){
+            const lines = block
+                .split("\n")
+                .map(cleanText)
+                .filter(Boolean);
+
+            return {
+                left: lines[0] || "",
+                right: lines.slice(1).join(" — ")
+            };
+        })
+        .filter(function(item){
+            return item.left || item.right;
+        });
+}
+
 function renderProgram(){
     const rawText =
         document.getElementById("inputText")
-        .value
-        .trim();
+        .value;
 
-    const leftWidth =
-        document.getElementById("leftWidthInput")
-        .value
-        .trim() || "45%";
+    const columnSettings = getColumnSettings();
 
-    const rightWidth =
-        document.getElementById("rightWidthInput")
-        .value
-        .trim() || "55%";
+    const mode =
+        document.getElementById("modeInput").value;
+
+    let rows = [];
+    if(mode === "block"){
+        rows = parseBlockMode(rawText);
+    }else{
+        rawText.split("\n").forEach(function(line){
+            if(!line.trim()) return;
+
+            const parts = splitLineSmart(line);
+            rows.push({
+                left: cleanText(parts.shift() || ""),
+                right: cleanText(parts.join(" — "))
+            });
+        });
+    }
+
+    currentRows = rows.map(function(row){
+        return {
+            left: row.left,
+            right: row.right
+        };
+    });
 
     let leftLines = [];
     let rightLines = [];
     let previewRows = "";
+    let previewBlocks = "";
 
-    rawText.split("\n").forEach(function(line){
-        if(!line.trim()) return;
-
-        const parts = splitLineSmart(line);
-
-        const leftText =
-            (parts.shift() || "")
-            .trim();
-
-        const rightText =
-            parts.join(" — ")
-            .trim();
+    rows.forEach(function(row){
+        const leftText = row.left;
+        const rightText = row.right;
 
         leftLines.push(leftText);
         rightLines.push(rightText);
 
         previewRows +=
             '<div class="preview-row" style="grid-template-columns:' +
-            leftWidth +
-            ' ' +
-            rightWidth +
+            columnSettings.template +
             ';">' +
             '<div class="preview-left">' +
             escapeHTML(leftText) +
@@ -349,6 +530,18 @@ function renderProgram(){
             '<div class="preview-right">' +
             escapeHTML(rightText) +
             '</div>' +
+            '</div>';
+
+        previewBlocks +=
+            '<div class="preview-block-item">' +
+            '<div class="preview-block-left">' +
+            escapeHTML(leftText) +
+            '</div>' +
+            (rightText
+                ? '<div class="preview-block-right">' +
+                  escapeHTML(rightText) +
+                  '</div>'
+                : '') +
             '</div>';
     });
 
@@ -361,52 +554,51 @@ function renderProgram(){
     document.getElementById("preview").innerHTML =
         previewRows;
 
-    setStatus("Generated successfully.");
+    document.getElementById("previewBlock").innerHTML =
+        previewBlocks;
+
+    if(!rows.length){
+        setStatus("ไม่พบข้อความสำหรับแยก");
+    }else{
+        setStatus(
+            "แยกข้อความสำเร็จ (" +
+            (mode === "block" ? "Block" : "Separator") +
+            ")" +
+            (columnSettings.corrected
+                ? " — ค่าความกว้างไม่ถูกต้อง จึงใช้ 45% / 55%"
+                : "")
+        );
+    }
+}
+
+function updateModeHelp(){
+    const blockMode =
+        document.getElementById("modeInput").value === "block";
+
+    document.getElementById("separatorInput").disabled = blockMode;
+    setStatus(blockMode
+        ? "โหมด Block: บรรทัดแรกเป็นฝั่งซ้าย บรรทัดถัดไปเป็นฝั่งขวา และใช้บรรทัดว่างแบ่งรายการ"
+        : "โหมด Separator: แยกข้อความด้วยตัวคั่นในแต่ละบรรทัด");
 }
 
 function swapText(){
-    const leftText =
-        document.getElementById("outputLeft")
-        .value
-        .trim();
-
-    const rightText =
-        document.getElementById("outputRight")
-        .value
-        .trim();
-
-    if(!leftText && !rightText){
+    if(!currentRows.length){
         alert("กรุณากด Generate ก่อน");
         return;
     }
 
-    const left =
-        leftText
-        ? leftText.split("\n")
-        : [];
-
-    const right =
-        rightText
-        ? rightText.split("\n")
-        : [];
-
-    let combined = [];
-    const max = Math.max(left.length, right.length);
-
-    for(let i = 0; i < max; i++){
-        const l = left[i] || "";
-        const r = right[i] || "";
-
-        if(r){
-            combined.push(l + " ............... " + r);
-        }else{
-            combined.push(l);
-        }
-    }
+    const combined = currentRows.map(function(row){
+        return row.right +
+            " ............... " +
+            row.left;
+    });
 
     document.getElementById("inputText").value =
         combined.join("\n");
 
+    document.getElementById("modeInput").value = "separator";
+    document.getElementById("separatorInput").value = "AUTO";
+    updateModeHelp();
     renderProgram();
 }
 
@@ -419,7 +611,7 @@ function copyToClipboard(text){
     if(navigator.clipboard && window.isSecureContext){
         navigator.clipboard.writeText(text)
             .then(function(){
-                setStatus("Copied.");
+                setStatus("คัดลอกแล้ว");
             })
             .catch(function(){
                 fallbackCopy(text);
@@ -451,7 +643,7 @@ function fallbackCopy(text){
             document.execCommand("copy");
 
         if(success){
-            setStatus("Copied.");
+            setStatus("คัดลอกแล้ว");
         }else{
             alert("Copy ไม่สำเร็จ กรุณากด Ctrl + C เอง");
         }
@@ -481,6 +673,11 @@ function copyAll(){
         document.getElementById("outputRight")
         .value;
 
+    if(!left.trim() && !right.trim()){
+        alert("ไม่มีข้อความให้คัดลอก");
+        return;
+    }
+
     const allText =
         "LEFT:\n" +
         left +
@@ -495,14 +692,17 @@ function clearAll(){
     document.getElementById("outputLeft").value = "";
     document.getElementById("outputRight").value = "";
     document.getElementById("preview").innerHTML = "";
+    document.getElementById("previewBlock").innerHTML = "";
+    currentRows = [];
 
-    setStatus("Cleared.");
+    setStatus("ล้างข้อมูลแล้ว");
 }
 
 function setStatus(message){
     document.getElementById("status").textContent = message;
 }
 
+updateModeHelp();
 renderProgram();
 </script>
 
